@@ -1,0 +1,3 @@
+[General]
+Enable_Console = true		#Enables showing the console
+Enable_Game_Console = false	#Enables the ingame console, open with the F2 key
