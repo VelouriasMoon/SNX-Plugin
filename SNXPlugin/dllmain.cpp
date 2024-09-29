@@ -10,6 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
+#include <format>
 
 static bool IsLoaded = false;
 static HMODULE MainHModule = nullptr;
@@ -55,6 +56,10 @@ void* Sig_URSSaveGame_Load = sigScan(
     "\x48\x89\x5C\x24\x2A\x55\x56\x57\x48\x83\xEC\x20\x4C\x8B\x41\x2A\x8B\xEA\x48\x8B\xF1\x4D\x85\xC0\x0F\x84\x2A\x2A\x2A\x2A\x41\x8B\x40\x2A\x33\xDB\x3B\x05\x2A\x2A\x2A\x2A\x7D\x2A\x99\x0F\xB7\xD2\x03\xC2\x8B\xC8\x0F\xB7\xC0\x2B\xC2\x48\x98\xC1\xF9\x10\x48\x63\xC9\x48\x8D\x14\x2A\x48\x8B\x05\x2A\x2A\x2A\x2A\x48\x8B\x0C\x2A\x48\x8D\x04\x2A\xEB\x2A\x48\x8B\xC3\x8B\x40\x2A\xC1\xE8\x1D\xA8\x01\x0F\x85\x2A\x2A\x2A\x2A\x49\x8B\xC8\xE8\x2A\x2A\x2A\x2A\x48\x8B\xF8\x48\x85\xC0\x0F\x84\x2A\x2A\x2A\x2A",
     "xxxx?xxxxxxxxxx?xxxxxxxxxx????xxx?xxxx????x?xxxxxxxxxxxxxxxxxxxxxxxx?xxx????xxx?xxx?x?xxxxx?xxxxxxx????xxxx????xxxxxxxx????");
 
+void* Sig_ProcessInternal = sigScan(
+    "\x48\x89\x5C\x24\x2A\x48\x89\x6C\x24\x2A\x48\x89\x74\x24\x2A\x57\x41\x56\x41\x57\x48\x83\xEC\x30\x4C\x8B\x72\x2A",
+    "xxxx?xxxx?xxxx?xxxxxxxxxxxx?");
+
 #pragma endregion
 
 
@@ -65,7 +70,7 @@ FUNCTION_PTR(void, __fastcall, UDataTable_AddRow, SIG_UDataTable_AddRow, SDK::UD
 #pragma endregion
 
 
-void WriteToLog(const std::string logFile, const std::string& text)
+void WriteToLog(std::string logFile, std::string text)
 {
     std::ofstream log_file(logFile, std::ios_base::out | std::ios_base::app);
     log_file << text;// << std::endl;
@@ -400,6 +405,7 @@ HOOK(void, _stdcall, hook_URSSaveGame_Load, Sig_URSSaveGame_Load, SDK::URSSaveGa
 
 HOOK(void, __stdcall, Hook_UObject_ProcessEvent, SIG_UObject_ProcessEvent, SDK::UObject* _this, SDK::UFunction* Function, void* params)
 {
+    /*
     if (MainHModule) {
         //CreateThread(0, 0, (LPTHREAD_START_ROUTINE)MainThread, MainHModule, 0, 0);
         WRITE_MEMORY(SIG_UObject_ProcessEvent, uint8_t, 0x40, 0x55, 0x56, 0x57, 0x41, 0x54);
@@ -408,7 +414,24 @@ HOOK(void, __stdcall, Hook_UObject_ProcessEvent, SIG_UObject_ProcessEvent, SDK::
     else {
         printf("HModule was null\n");
     }
+    */
+
+    //printf("[SNXPlugin] ProcessEvent: %s, %p\n", Function->GetName().c_str(), Function->ExecFunction);
+
+    std::stringstream log = std::stringstream("[SNXPlugin] ProcessEvent: ");
+    log << Function->GetFullName() << ", " << Function->ExecFunction << "\n";
+    WriteToLog("ProcessEvent.log", log.str());
+
     return orig_Hook_UObject_ProcessEvent(_this, Function, params);
+}
+
+HOOK(void, __stdcall, Hook_UObject_ProcessInternal, Sig_ProcessInternal, SDK::UObject* _this, SDK::FFrame* Frame, void* Result)
+{
+    std::stringstream log = std::stringstream("[SNXPlugin] ProcessEvent: ");
+    log << Frame->Node->GetFullName() << "\n";
+    WriteToLog("ProcessInternal.log", log.str());
+
+    return orig_Hook_UObject_ProcessInternal(_this, Frame, Result);
 }
 
 #pragma endregion
@@ -428,6 +451,8 @@ BOOL APIENTRY DllMain( HMODULE hModule,
         INSTALL_HOOK(Hook_ARSHUDBase_CloseSystemMessage);
         INSTALL_HOOK(Hook_UUISaveLoad_Start);
         INSTALL_HOOK(hook_URSSaveGame_Load);
+        //INSTALL_HOOK(Hook_UObject_ProcessEvent);
+        //INSTALL_HOOK(Hook_UObject_ProcessInternal);
         return TRUE;
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:

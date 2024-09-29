@@ -169,6 +169,7 @@
     <ClInclude Include="SDK\BattlePrototype_classes.hpp" />
     <ClInclude Include="SDK\BattlePrototype_parameters.hpp" />
     <ClInclude Include="SDK\BattlePrototype_structs.hpp" />
+    <ClInclude Include="SDK\CoreUObject_structs.hpp" />
     <ClInclude Include="SDK\Engine_classes.hpp" />
     <ClInclude Include="SDK\Engine_parameters.hpp" />
     <ClInclude Include="SDK\Engine_structs.hpp" />

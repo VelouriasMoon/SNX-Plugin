@@ -17410,5 +17410,26 @@ static_assert(offsetof(FNetViewer, ViewTarget) == 0x000010, "Member 'FNetViewer:
 static_assert(offsetof(FNetViewer, ViewLocation) == 0x000018, "Member 'FNetViewer::ViewLocation' has a wrong offset!");
 static_assert(offsetof(FNetViewer, ViewDir) == 0x000024, "Member 'FNetViewer::ViewDir' has a wrong offset!");
 
+struct FFrame final //: public FOutputDevice
+{
+public:
+	uint8                                         Pad_270[0x10];									// 0x0000(0x0010)
+	class									      UFunction* Node;									// 0x0010(0x0008)
+	class                                         UObject* Object;									// 0x0018(0x0008)		
+	uint8*                                        Code;												// 0x0020
+	uint8*                                        Locals;											// 0x0028
+	struct FProperty*                             MostRecentProperty;								// 0x0030
+	uint8*                                        MostRecentPropertyAddress;						// 0x0038
+	//FlowStackType                                 FlowStack;										// 0x0040(0x0048)
+	FFrame*                                       PreviousFrame;									// 0x0088
+	//FOutParmRec*                                  OutParams;										// 0x0090
+	FField*                                       PropertyChainForCompiledIn;						// 0x0098
+	UFunction*                                    CurrentNativeFunction;							// 0x00A0
+	bool                                          bArrayContextFailed;								// 0x00A8
+};
+
+
 }
+
+
 
