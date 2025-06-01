@@ -1,8 +1,8 @@
 # SNX-Plugin
 A code plugin for Scarlet Nexus to extend to modability with a main focus on live DataTable merging.
 
-[!CAUTION]
-This Plugin was made off of the latest(v1.08) of the **Steam** version of the game, other versions are not actively supported.  
+> [!WARNING]
+> This Plugin was made off of the latest(v1.08) of the **Steam** version of the game, other versions are not actively supported.  
 
 ## Navigation
 [Installation](#installation)
