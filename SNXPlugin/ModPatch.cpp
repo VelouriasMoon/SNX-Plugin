@@ -21,6 +21,18 @@ std::map<std::string, SDK::FTextDataCell> ModPatch::DT_ItemDescription;
 std::map<std::string, SDK::FAddContentRefDataCell> ModPatch::AddContentDataTable;
 std::map<std::string, SDK::FAddContentsPresentList> ModPatch::DT_AddContentsPresentList;
 std::vector<std::string> ModPatch::AddContentsNameList;
+std::map<std::string, SDK::FShopLineupCell> ModPatch::ShopList;
+std::map<std::string, SDK::FFAttachmentData> ModPatch::DT_AttachmentData;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0100;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0200;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0300;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0400;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0500;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0600;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0700;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0800;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch0900;
+std::map<std::string, SDK::FFAttachmentEquipData> ModPatch::DT_AttachmentEquip_ch1000;
 
 void ModPatch::ProccessCostumeTable(toml::table table, std::map<std::string, SDK::FFPlayerCostumeData>* DataTable)
 {
@@ -250,7 +262,7 @@ void ModPatch::ProccessAddContentGiftsTable(toml::table table, std::map<std::str
 			PresentInfo.Num = Info.as_array()->get(2)->value_or(1);
 			if (!AddContent.PresentInfos.Add(PresentInfo))
 			{
-				TArrayHelper::ResizeTArray((SDK::TArray<SDK::FName>*)(&AddContent.PresentInfos), AddContent.PresentInfos.Max() + 1);
+				TArrayHelper::ResizeTArray(&AddContent.PresentInfos, AddContent.PresentInfos.Max() + 1);
 				if (!AddContent.PresentInfos.Add(PresentInfo))
 				{
 					printf("[SNXPlugin] [TOML] [Error] Could not add to Present List, Size %i/%i\n", AddContent.PresentInfos.Num(), AddContent.PresentInfos.Max());
@@ -259,6 +271,158 @@ void ModPatch::ProccessAddContentGiftsTable(toml::table table, std::map<std::str
 			}
 		}
 		DataTable->insert({ name, AddContent });
+	}
+}
+
+void ModPatch::ProccessShopTable(toml::table table, std::map<std::string, SDK::FShopLineupCell>* DataTable)
+{
+	for (auto& [key, value] : table)
+	{
+		std::string name = key.str().data();
+		const std::string text = value.value_or("");
+
+		if (DataTable->contains(text.c_str()))
+		{
+			printf("[SNXPlugin] [TOML] Duplicate entry for \"%s\" found in toml\n", name.c_str());
+			continue;
+		}
+
+		SDK::FShopLineupCell ShopCell = *new SDK::FShopLineupCell();
+		ShopCell.ItemId = FNameHelper::FNameFromString(text);
+
+		DataTable->insert({ name, ShopCell });
+	}
+}
+
+void ModPatch::ProccessAttachmentTable(toml::table table, std::map<std::string, SDK::FFAttachmentData>* DataTable)
+{
+	for (auto& [key, value] : table)
+	{
+		std::string name = key.str().data();
+		toml::array* data = nullptr;
+
+		if (value.is_array())
+			data = value.as_array();
+		else
+		{
+			printf("[SNXPlugin] [TOML] entry \"%s\" in toml is not an array", name);
+			continue;
+		}
+		if (data->size() <= 0) {
+			printf("[SNXPlugin] [TOML] entry data for \"%s\" is empty in toml\n", name.c_str());
+			continue;
+		}
+		if (DataTable->contains(name.c_str())) {
+			printf("[SNXPlugin] [TOML] Duplicate entry for \"%s\" found in toml\n", name.c_str());
+			continue;
+		}
+
+		SDK::TArray<SDK::FFAttachmentMaterialData> MatData = *new SDK::TAllocatedArray<SDK::FFAttachmentMaterialData>(5);
+		for (auto& entry : *data->get(4)->as_array())
+		{
+			toml::array* subarr = entry.as_array();
+			SDK::FFAttachmentMaterialData Mat = *new SDK::FFAttachmentMaterialData();
+			Mat.Index_2_F0E0CE394BBC4C011AF948B7827140F8 = subarr->get(0)->value_or(0);
+
+			SDK::TSoftObjectPtr<SDK::UMaterialInstance> newpath;
+			newpath.ObjectID = { .AssetPathName = FNameHelper::FNameFromString(subarr->get(1)->value_or(""), SDK::FNAME_Add)};
+			Mat.Material_5_8A6AB60947AAB71B31FCF3B55E7C045E = newpath;
+
+			if (!MatData.Add(Mat))
+			{
+				TArrayHelper::ResizeTArray(&MatData, MatData.Max() + 2);
+				MatData.Add(Mat);
+			}
+			
+		}
+
+		SDK::FFAttachmentData Attach = *new SDK::FFAttachmentData();
+		Attach.Category_36_C40BBD6745AD6D8FA52A6EB6838AC260 = magic_enum::enum_cast<SDK::EAttachmentCategory>(data->get(0)->value_or("Head")).value_or(SDK::EAttachmentCategory::Head);
+		Attach.Variation_9_116523494A7CECE38EB2C1A2C195E751 = data->get(1)->value_or(0);
+		Attach.bUseAnimation_31_3C166736430B2AE7D0B90587EDC972AC = data->get(2)->value_or(false);
+		Attach.EquipDataIndex_39_3799DF4345234ADF332299AC3C324385 = data->get(3)->value_or(0);
+		Attach.MaterialData_43_56C799EC43832C9C78A679B25AD9ED1E = MatData;
+
+		DataTable->insert({ name, Attach });
+	}
+}
+
+void ModPatch::ProccessAttachmentEquipTable(toml::table table, std::map<std::string, SDK::FFAttachmentEquipData>* DataTable)
+{
+	for (auto& [key, value] : table)
+	{
+		std::string name = key.str().data();
+		toml::array* data = nullptr;
+
+		if (value.is_array())
+			data = value.as_array();
+		else
+		{
+			printf("[SNXPlugin] [TOML] entry \"%s\" in toml is not an array", name);
+			continue;
+		}
+		if (data->size() <= 0) {
+			printf("[SNXPlugin] [TOML] entry data for \"%s\" is empty in toml\n", name.c_str());
+			continue;
+		}
+		if (DataTable->contains(name.c_str())) {
+			printf("[SNXPlugin] [TOML] Duplicate entry for \"%s\" found in toml\n", name.c_str());
+			continue;
+		}
+
+		SDK::TArray<SDK::TSoftObjectPtr<SDK::UObject>> MeshList = *new SDK::TAllocatedArray<SDK::TSoftObjectPtr<SDK::UObject>>(5);
+		for (auto& entry : *data->get(0)->as_array())
+		{
+			SDK::TSoftObjectPtr<SDK::UObject> newpath;
+			newpath.ObjectID = { .AssetPathName = FNameHelper::FNameFromString(entry.value_or(""), SDK::FNAME_Add)};
+
+			if (!MeshList.Add(newpath))
+			{
+				TArrayHelper::ResizeTArray(&MeshList, MeshList.Max() + 2);
+				if (!MeshList.Add(newpath));
+				{
+					printf("[SNXPlugin] [TOML] [Error] Could not add to Mesh List, Size %i/%i\n", MeshList.Num(), MeshList.Max());
+					continue;
+				}
+			}
+		}
+
+		SDK::TArray<SDK::FFAttachmentPartsData> PartsDataList = *new SDK::TAllocatedArray<SDK::FFAttachmentPartsData>(5);
+		for (auto& entry : *data->get(1)->as_array())
+		{
+			SDK::FFAttachmentPartsData PartsData = *new SDK::FFAttachmentPartsData();
+			toml::array* subarr = entry.as_array();
+
+			PartsData.MeshIndex_5_56552C2043B8E41B4FC86791862B758B = subarr->get(0)->value_or(0);
+			PartsData.SocketName_15_E3C50981433F47A29025B8A802252813 = FNameHelper::FNameFromString(subarr->get(1)->value_or(""), SDK::FNAME_Add);
+			PartsData.Offset_9_369657DF4B7AC8E84D3DC3A03BDD2994 = *new SDK::FVector();
+			PartsData.Offset_9_369657DF4B7AC8E84D3DC3A03BDD2994.X = subarr->get(2)->as_array()->get(0)->value_or(0.0);
+			PartsData.Offset_9_369657DF4B7AC8E84D3DC3A03BDD2994.Y = subarr->get(2)->as_array()->get(1)->value_or(0.0);
+			PartsData.Offset_9_369657DF4B7AC8E84D3DC3A03BDD2994.Z = subarr->get(2)->as_array()->get(2)->value_or(0.0);
+			PartsData.Rotate_10_2DD784894E499799D340DBA8757A1A8F = *new SDK::FRotator();
+			PartsData.Rotate_10_2DD784894E499799D340DBA8757A1A8F.Pitch = subarr->get(3)->as_array()->get(0)->value_or(0.0);
+			PartsData.Rotate_10_2DD784894E499799D340DBA8757A1A8F.Yaw = subarr->get(3)->as_array()->get(1)->value_or(0.0);
+			PartsData.Rotate_10_2DD784894E499799D340DBA8757A1A8F.Roll = subarr->get(3)->as_array()->get(2)->value_or(0.0);
+			PartsData.Scale_11_BB3B1F2943D1D5BDB361BA868B08435D = *new SDK::FVector();
+			PartsData.Scale_11_BB3B1F2943D1D5BDB361BA868B08435D.X = subarr->get(4)->as_array()->get(0)->value_or(1.0);
+			PartsData.Scale_11_BB3B1F2943D1D5BDB361BA868B08435D.Y = subarr->get(4)->as_array()->get(1)->value_or(1.0);
+			PartsData.Scale_11_BB3B1F2943D1D5BDB361BA868B08435D.Z = subarr->get(4)->as_array()->get(2)->value_or(1.0);
+
+			if (!PartsDataList.Add(PartsData))
+			{
+				TArrayHelper::ResizeTArray(&PartsDataList, PartsDataList.Max() + 2);
+				if (!PartsDataList.Add(PartsData)) {
+					printf("[SNXPlugin] [TOML] [Error] Could not add to Parts Data List, Size %i/%i\n", PartsDataList.Num(), PartsDataList.Max());
+					continue;
+				}
+			}
+		}
+
+		SDK::FFAttachmentEquipData Equip = *new SDK::FFAttachmentEquipData();
+		Equip.MeshList_18_BBC82E92488929EB09E41C9D91AD7A32 = MeshList;
+		Equip.PartsDataList_21_E909A6EE436F74F1833547800184F825 = PartsDataList;
+
+		DataTable->insert({ name, Equip });
 	}
 }
 
@@ -358,6 +522,54 @@ bool ModPatch::init()
 		table = config["DT_AddContentsPresentList"].as_table();
 		if (table)
 			ProccessAddContentGiftsTable(*table, &DT_AddContentsPresentList);
+
+		table = config["ShopTable"].as_table();
+		if (table)
+			ProccessShopTable(*table, &ShopList);
+
+		table = config["DT_AttachmentData"].as_table();
+		if (table)
+			ProccessAttachmentTable(*table, &DT_AttachmentData);
+
+		table = config["DT_AttachmentEquip_ch0100"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0100);
+
+		table = config["DT_AttachmentEquip_ch0200"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0200);
+
+		table = config["DT_AttachmentEquip_ch0300"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0300);
+
+		table = config["DT_AttachmentEquip_ch0400"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0400);
+
+		table = config["DT_AttachmentEquip_ch0500"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0500);
+
+		table = config["DT_AttachmentEquip_ch0600"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0600);
+
+		table = config["DT_AttachmentEquip_ch0700"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0700);
+
+		table = config["DT_AttachmentEquip_ch0800"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0800);
+
+		table = config["DT_AttachmentEquip_ch0900"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch0900);
+
+		table = config["DT_AttachmentEquip_ch1000"].as_table();
+		if (table)
+			ProccessAttachmentEquipTable(*table, &DT_AttachmentEquip_ch1000);
 
 		i++;
 	}

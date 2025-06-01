@@ -173,6 +173,7 @@
     <ClInclude Include="SDK\Engine_classes.hpp" />
     <ClInclude Include="SDK\Engine_parameters.hpp" />
     <ClInclude Include="SDK\Engine_structs.hpp" />
+    <ClInclude Include="SDK\FAttachmentMaterialData_structs.hpp" />
     <ClInclude Include="SDK\UMG_classes.hpp" />
     <ClInclude Include="SDK\UMG_parameters.hpp" />
     <ClInclude Include="SDK\UMG_structs.hpp" />

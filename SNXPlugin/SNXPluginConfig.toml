@@ -1,3 +1,4 @@
 [General]
-Enable_Console = true		#Enables showing the console
-Enable_Game_Console = false	#Enables the ingame console, open with the F2 key
+Enable_Console = true			#Enables showing the console
+Enable_Game_Console = false		#Enables the ingame console, open with the F2 key
+Save_Clean_Notification = false	#Notifes the user when a mod's addon flag was removed from the required dlc list of the save game

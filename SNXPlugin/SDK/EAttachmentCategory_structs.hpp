@@ -18,17 +18,17 @@ namespace SDK
 // NumValues: 0x000C
 enum class EAttachmentCategory : uint8
 {
-	NewEnumerator0                           = 0,
-	NewEnumerator1                           = 1,
-	NewEnumerator2                           = 2,
-	NewEnumerator3                           = 3,
-	NewEnumerator4                           = 4,
-	NewEnumerator5                           = 5,
-	NewEnumerator6                           = 6,
-	NewEnumerator7                           = 7,
-	NewEnumerator8                           = 8,
-	NewEnumerator9                           = 9,
-	NewEnumerator10                          = 10,
+	Head = 0,
+	Forhead = 1,
+	FullFace = 2,
+	Eye = 3,
+	Ear = 4,
+	Mouth = 5,
+	Face = 6,
+	FrontBody = 7,
+	BackBody = 8,
+	Arm = 9,
+	Leg = 10,
 	EAttachmentCategory_MAX                  = 11,
 };
 

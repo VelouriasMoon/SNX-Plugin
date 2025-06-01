@@ -5,6 +5,7 @@
 #include "ModPatch.h"
 #include "Util.h"
 #include "Config.h"
+#include "magic_enum.hpp"
 
 #include <windows.h>
 #include <iostream>
@@ -27,10 +28,6 @@ FORCEINLINE uint64_t GetAddressFromFuncCall(uint64_t a1)
 void* SIG_UObject_ProcessEvent = sigScan(
     "\x40\x55\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x81\xEC\xF0\x00\x00\x00",
     "xxxxxxxxxxxxxxxxxxx");
-
-void* SIG_UDataTable_AddRow = sigScan(
-    "\x48\x89\x5C\x24\x2A\x48\x89\x6C\x24\x2A\x56\x57\x41\x56\x48\x83\xEC\x20\x48\x8B\xDA",
-    "xxxx?xxxx?xxxxxxxxxxx");
 
 void* Sig_UUITitleLogo_InitializeThis = sigScan(
     "\x48\x89\x5C\x24\x2A\x48\x89\x74\x24\x2A\x48\x89\x7C\x24\x2A\x4C\x89\x64\x24\x2A\x55\x41\x56\x41\x57\x48\x8B\xEC\x48\x83\xEC\x50\x48\x8B\x45\x2A",
@@ -60,8 +57,23 @@ void* Sig_ProcessInternal = sigScan(
     "\x48\x89\x5C\x24\x2A\x48\x89\x6C\x24\x2A\x48\x89\x74\x24\x2A\x57\x41\x56\x41\x57\x48\x83\xEC\x30\x4C\x8B\x72\x2A",
     "xxxx?xxxx?xxxx?xxxxxxxxxxxx?");
 
-#pragma endregion
+void* Sig_UObject_CallFunction = sigScan(
+    "\x40\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x83\xEC\x70\x48\x8D\x6C\x24\x2A\x48\x89\x5D\x2A\x48\x89\x75\x2A\x48\x89\xBD\x2A\x2A\x2A\x2A\x48\x8B\x05\x2A\x2A\x2A\x2A\x48\x33\xC5\x48\x89\x45\x2A\x41\x8B\x81\x2A\x2A\x2A\x2A",
+    "xxxxxxxxxxxxxxxxxx?xxx?xxx?xxx????xxx????xxxxxx?xxx????");
 
+void* Sig_UObject_CallFunctionByNameWithArguments = sigScan(
+    "\x40\x55\x53\x56\x57\x41\x54\x41\x55\x41\x56\x41\x57\x48\x81\xEC\xB8\x02\x00\x00",
+    "xxxxxxxxxxxxxxxxxxxx");
+
+void* Sig_UUIShop_Start = sigScan(
+    "\x48\x89\x5C\x24\x2A\x48\x89\x74\x24\x2A\x48\x89\x7C\x24\x2A\x55\x41\x54\x41\x55\x41\x56\x41\x57\x48\x8D\xAC\x24\x2A\x2A\x2A\x2A\x48\x81\xEC\xF0\x01\x00\x00\x48\x8B\x05\x2A\x2A\x2A\x2A\x48\x33\xC4\x48\x89\x85\x2A\x2A\x2A\x2A\x48\x8B\x01",
+    "xxxx?xxxx?xxxx?xxxxxxxxxxxxx????xxxxxxxxxx????xxxxxx????xxx");
+
+void* SIG_UDataTable_AddRow = sigScan(
+    "\x48\x89\x5C\x24\x2A\x48\x89\x6C\x24\x2A\x56\x57\x41\x56\x48\x83\xEC\x20\x48\x8B\xDA",
+    "xxxx?xxxx?xxxxxxxxxxx");
+
+#pragma endregion
 
 #pragma region FunctionPtrs
 
@@ -93,7 +105,7 @@ void UnlockConsole() {
     * This is a rare case of a DefaultObjects' member-variables being changed.
     * By default you do not want to use the DefaultObject, this is a rare exception.
     */
-    SDK::UInputSettings::GetDefaultObj()->ConsoleKeys[0].KeyName = SDK::UKismetStringLibrary::Conv_StringToName(L"F2");
+    SDK::UInputSettings::GetDefaultObj()->ConsoleKeys[0].KeyName = SDK::UKismetStringLibrary::Conv_StringToName(L"Tilde");
 
     /* Creates a new UObject of class-type specified by Engine->ConsoleClass */
     SDK::UObject* NewObject = SDK::UGameplayStatics::SpawnObject(Engine->ConsoleClass, Engine->GameViewport);
@@ -124,7 +136,8 @@ void MergeDataTables()
 
     if (ModPatch::DT_ItemData.size() > 0)
     {
-        SDK::UDataTable* DT_ItemData = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_ItemData.DT_ItemData"));
+        //SDK::UDataTable* DT_ItemData = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_ItemData.DT_ItemData"));
+        SDK::UDataTable* DT_ItemData = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_ItemData", SDK::UDataTable::StaticClass()));
         SDK::URSGameInstance* RSGameInstance = SDK::URSUtilityLibrary::GetRSGameInstance(World);
         SDK::UDatabaseManager* DataBaseManager = RSGameInstance->GetDatabaseManager();
         SDK::UItemData* ItemData = DataBaseManager->GetItemData();
@@ -147,7 +160,8 @@ void MergeDataTables()
 
     if (ModPatch::DT_ItemName.size() > 0)
     {
-        SDK::UDataTable* DT_ItemName = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_ItemName.DT_ItemName"));
+        //SDK::UDataTable* DT_ItemName = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_ItemName.DT_ItemName"));
+        SDK::UDataTable* DT_ItemName = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_ItemName", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_ItemName)
         {
             UDataTable_AddRow(DT_ItemName, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -156,7 +170,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_ItemDescription.size() > 0) {
-        SDK::UDataTable* DT_ItemDescription = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_ItemDescription.DT_ItemDescription"));
+        //SDK::UDataTable* DT_ItemDescription = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_ItemDescription.DT_ItemDescription"));
+        SDK::UDataTable* DT_ItemDescription = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_ItemDescription", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_ItemDescription)
         {
             UDataTable_AddRow(DT_ItemDescription, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -165,7 +180,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0100.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0100 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0100.DT_Costume_ch0100"));
+        //SDK::UDataTable* DT_Costume_ch0100 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0100.DT_Costume_ch0100"));
+        SDK::UDataTable* DT_Costume_ch0100 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0100", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0100)
         {
             UDataTable_AddRow(DT_Costume_ch0100, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -174,7 +190,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0200.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0200 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0200.DT_Costume_ch0200"));
+        //SDK::UDataTable* DT_Costume_ch0200 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0200.DT_Costume_ch0200"));
+        SDK::UDataTable* DT_Costume_ch0200 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0200", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0200)
         {
             UDataTable_AddRow(DT_Costume_ch0200, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -183,7 +200,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0300.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0300 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0300.DT_Costume_ch0300"));
+        //SDK::UDataTable* DT_Costume_ch0300 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0300.DT_Costume_ch0300"));
+        SDK::UDataTable* DT_Costume_ch0300 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0300", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0300)
         {
             UDataTable_AddRow(DT_Costume_ch0300, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -192,7 +210,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0400.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0400 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0400.DT_Costume_ch0400"));
+        //SDK::UDataTable* DT_Costume_ch0400 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0400.DT_Costume_ch0400"));
+        SDK::UDataTable* DT_Costume_ch0400 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0400", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0400)
         {
             UDataTable_AddRow(DT_Costume_ch0400, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -201,7 +220,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0500.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0500 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0500.DT_Costume_ch0500"));
+        //SDK::UDataTable* DT_Costume_ch0500 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0500.DT_Costume_ch0500"));
+        SDK::UDataTable* DT_Costume_ch0500 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0500", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0500)
         {
             UDataTable_AddRow(DT_Costume_ch0500, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -210,7 +230,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0600.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0600 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0600.DT_Costume_ch0600"));
+        //SDK::UDataTable* DT_Costume_ch0600 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0600.DT_Costume_ch0600"));
+        SDK::UDataTable* DT_Costume_ch0600 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0600", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0600)
         {
             UDataTable_AddRow(DT_Costume_ch0600, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -219,7 +240,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0700.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0700 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0700.DT_Costume_ch0700"));
+        //SDK::UDataTable* DT_Costume_ch0700 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0700.DT_Costume_ch0700"));
+        SDK::UDataTable* DT_Costume_ch0700 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0700", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0700)
         {
             UDataTable_AddRow(DT_Costume_ch0700, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -228,7 +250,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0800.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0800 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0800.DT_Costume_ch0800"));
+        //SDK::UDataTable* DT_Costume_ch0800 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0800.DT_Costume_ch0800"));
+        SDK::UDataTable* DT_Costume_ch0800 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0800", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0800)
         {
             UDataTable_AddRow(DT_Costume_ch0800, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -237,7 +260,8 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch0900.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch0900 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0900.DT_Costume_ch0900"));
+        //SDK::UDataTable* DT_Costume_ch0900 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch0900.DT_Costume_ch0900"));
+        SDK::UDataTable* DT_Costume_ch0900 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch0900", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch0900)
         {
             UDataTable_AddRow(DT_Costume_ch0900, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
@@ -246,11 +270,121 @@ void MergeDataTables()
     }
 
     if (ModPatch::DT_Costume_ch1000.size() > 0) {
-        SDK::UDataTable* DT_Costume_ch1000 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch1000.DT_Costume_ch1000"));
+        //SDK::UDataTable* DT_Costume_ch1000 = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject("DataTable DT_Costume_ch1000.DT_Costume_ch1000"));
+        SDK::UDataTable* DT_Costume_ch1000 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_Costume_ch1000", SDK::UDataTable::StaticClass()));
         for (auto& entry : ModPatch::DT_Costume_ch1000)
         {
             UDataTable_AddRow(DT_Costume_ch1000, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
             printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_Costume_ch1000->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentData.size() > 0) {
+        SDK::UDataTable* DT_AttachmentData = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentData", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentData)
+        {
+            UDataTable_AddRow(DT_AttachmentData, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentData->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0100.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0100 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0100", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0100)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0100, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0100->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0200.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0200 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0200", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0200)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0200, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0200->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0300.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0300 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0300", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0300)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0300, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0300->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0400.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0400 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0400", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0400)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0400, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0400->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0500.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0500 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0500", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0500)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0500, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0500->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0600.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0600 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0600", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0600)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0600, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0600->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0700.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0700 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0700", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0700)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0700, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0700->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0800.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0800 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0800", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0800)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0800, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0800->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch0900.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch0900 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch0900", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch0900)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch0900, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch0900->GetName().c_str());
+        }
+    }
+
+    if (ModPatch::DT_AttachmentEquip_ch1000.size() > 0)
+    {
+        SDK::UDataTable* DT_AttachmentEquip_ch1000 = static_cast<SDK::UDataTable*>(FindObjectByClass("DT_AttachmentEquip_ch1000", SDK::UDataTable::StaticClass()));
+        for (auto& entry : ModPatch::DT_AttachmentEquip_ch1000)
+        {
+            UDataTable_AddRow(DT_AttachmentEquip_ch1000, FNameHelper::FNameFromString(entry.first, SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), DT_AttachmentEquip_ch1000->GetName().c_str());
         }
     }
     
@@ -311,6 +445,13 @@ void AddContentClean(SDK::URSSaveGame* SaveGame)
         i++;
     }
 
+    if (i > 0)
+    {
+        SDK::ARSHUDBase* HUD = SDK::UREDWidgetBPLibrary::GetRSHudBase(World);
+        HUD->OpenSystemMessage(SDK::FString(L"SaveGame has been cleaned of unused addon flags from mods"), false, false, false);
+        Sleep(5000);
+        HUD->CloseSystemMessage();
+    }
 }
 
 DWORD MainThread(HMODULE Module)
@@ -434,6 +575,47 @@ HOOK(void, __stdcall, Hook_UObject_ProcessInternal, Sig_ProcessInternal, SDK::UO
     return orig_Hook_UObject_ProcessInternal(_this, Frame, Result);
 }
 
+HOOK(void, __fastcall, hook_UObject_CallFunction, Sig_UObject_CallFunction, SDK::UObject* _this, SDK::FFrame* Frame, void* Param2, SDK::UFunction* Function)
+{
+    std::stringstream log = std::stringstream("[SNXPlugin] CallFunction: ");
+    log << Frame->Node->GetFullName() << ", " << Function->GetFullName() << "\n";
+    WriteToLog("CallFunction.log", log.str());
+
+    return orig_hook_UObject_CallFunction(_this, Frame, Param2, Function);
+}
+
+HOOK(bool, __fastcall, hook_UObject_CallFunctionByName, Sig_UObject_CallFunctionByNameWithArguments, SDK::UObject* _this, wchar_t* name, uint64_t* param2, SDK::UObject* param3, bool param4)
+{
+    std::stringstream log = std::stringstream("[SNXPlugin] CallFunctionByName: ");
+    std::wstring WFuncName = name;
+    std::string FuncName = std::string(WFuncName.begin(), WFuncName.end());
+    log << FuncName << "\n";
+    WriteToLog("CallFunctionByName.log", log.str());
+    printf("[SNXPlugin] CallFunctionByName: %S\n", name);
+
+    return orig_hook_UObject_CallFunctionByName(_this, name, param2, param3, param4);
+}
+
+HOOK(void, __stdcall, hook_UUIShop_Start, Sig_UUIShop_Start, SDK::UUIShop* _this, int ShopId, int TradeShopId, SDK::EShopMode Mode)
+{
+    
+    printf("[SNXPlugin] UUIShop::Start: ShopId: %i, TradeShopId: %i, Mode: %s\n", ShopId, TradeShopId, magic_enum::enum_name(Mode).data());
+    //Preload the DataTable so that the new item can be injected before the shop is populated 
+    SDK::UDataTable* ShopTable = SDK::URSUtilityLibrary::LoadDataTable(FNameHelper::FStringFromString(std::format("/Game/Database/Shop/shop{}.shop{}", ShopId, ShopId)));
+
+    if (ModPatch::ShopList.size() > 0)
+    {
+        //SDK::UDataTable* ShopTable = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject(std::format("DataTable shop{}.shop{}", ShopId, ShopId)));
+        for (auto& entry : ModPatch::ShopList)
+        {
+            UDataTable_AddRow(ShopTable, FNameHelper::FNameFromString(entry.first.c_str(), SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), ShopTable->GetName().c_str());
+        }
+    }
+
+    return orig_hook_UUIShop_Start(_this, ShopId, TradeShopId, Mode);
+}
+
 #pragma endregion
 
 BOOL APIENTRY DllMain( HMODULE hModule,
@@ -446,13 +628,34 @@ BOOL APIENTRY DllMain( HMODULE hModule,
     case DLL_PROCESS_ATTACH:
         //CreateThread(0, 0, (LPTHREAD_START_ROUTINE)MainThread, hModule, 0, 0);
         MainHModule = hModule;
-        INSTALL_HOOK(Hook_UUITitleLogo_InitializeThis);
-        INSTALL_HOOK(Hook_ARSHUDBase_OpenSystemMessage);
-        INSTALL_HOOK(Hook_ARSHUDBase_CloseSystemMessage);
-        INSTALL_HOOK(Hook_UUISaveLoad_Start);
-        INSTALL_HOOK(hook_URSSaveGame_Load);
-        //INSTALL_HOOK(Hook_UObject_ProcessEvent);
-        //INSTALL_HOOK(Hook_UObject_ProcessInternal);
+
+        if (Sig_UUITitleLogo_InitializeThis)
+        {
+            INSTALL_HOOK(Hook_UUITitleLogo_InitializeThis);
+            INSTALL_HOOK(hook_UUIShop_Start);
+
+            if (Sig_ARSHUDBase_OpenSystemMessage && Sig_ARSHUDBase_CloseSystemMessage_Call)
+            {
+                INSTALL_HOOK(Hook_ARSHUDBase_OpenSystemMessage);
+                INSTALL_HOOK(Hook_ARSHUDBase_CloseSystemMessage);
+            }
+            else {
+                printf("[SNXPlugin] [Error] Could not find signature for ARSHUDBase::OpenSystemMessage or ARSHUDBase::CloseSystemMessage_Call, unable to initiate merge.\n");
+            }
+
+            if (Sig_UUISaveLoad_Start && Sig_URSSaveGame_Load)
+            {
+                INSTALL_HOOK(Hook_UUISaveLoad_Start);
+                INSTALL_HOOK(hook_URSSaveGame_Load);
+            }
+            else {
+                printf("[SNXPlugin] [Warning] Could not find signature for UUISaveLoad::Start or URSSaveGame::Load, DLC block bypass and save cleaning could not be started. This may cause issues.\n");
+            }
+        }
+        else {
+            printf("[SNXPlugin] [Error] Could not find signature for UUITitleLogo::InitializeThis, unable to start plugin.\n");
+        }
+
         return TRUE;
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:

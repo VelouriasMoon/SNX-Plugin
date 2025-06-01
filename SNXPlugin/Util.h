@@ -12,4 +12,8 @@ namespace FNameHelper
 namespace TArrayHelper
 {
 	void ResizeTArray(SDK::TArray<SDK::FName>* TargetArray, int Size);
+	void ResizeTArray(void* TargetArray, int Size);
 }
+
+SDK::UObject* FindObjectByClass(const std::string& Name, SDK::UClass* uclass);
+

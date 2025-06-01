@@ -81,6 +81,9 @@
     <ClInclude Include="SDK\CoreUObject_structs.hpp">
       <Filter>SDK</Filter>
     </ClInclude>
+    <ClInclude Include="SDK\FAttachmentMaterialData_structs.hpp">
+      <Filter>SDK</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
