@@ -7,7 +7,7 @@ public:
 	static bool DebugConsole;
 	static bool GameConsole;
 	static bool SaveCleanNoti;
-
+	static bool LoadAllShopTables;
 
 	static bool init();
 };

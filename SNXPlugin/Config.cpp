@@ -3,6 +3,7 @@
 bool Config::DebugConsole;
 bool Config::GameConsole;
 bool Config::SaveCleanNoti;
+bool Config::LoadAllShopTables;
 
 bool Config::init()
 {
@@ -27,6 +28,7 @@ bool Config::init()
 	DebugConsole = config["General"]["Enable_Console"].value_or(false);
 	GameConsole = config["General"]["Enable_Game_Console"].value_or(false);
 	SaveCleanNoti = config["General"]["Save_Clean_Notification"].value_or(false);
+	LoadAllShopTables = config["General"]["LoadAllShopTables"].value_or(false);
 
 	return true;
 }

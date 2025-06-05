@@ -598,21 +598,66 @@ HOOK(bool, __fastcall, hook_UObject_CallFunctionByName, Sig_UObject_CallFunction
 
 HOOK(void, __stdcall, hook_UUIShop_Start, Sig_UUIShop_Start, SDK::UUIShop* _this, int ShopId, int TradeShopId, SDK::EShopMode Mode)
 {
-    
-    printf("[SNXPlugin] UUIShop::Start: ShopId: %i, TradeShopId: %i, Mode: %s\n", ShopId, TradeShopId, magic_enum::enum_name(Mode).data());
-    //Preload the DataTable so that the new item can be injected before the shop is populated 
-    SDK::UDataTable* ShopTable = SDK::URSUtilityLibrary::LoadDataTable(FNameHelper::FStringFromString(std::format("/Game/Database/Shop/shop{}.shop{}", ShopId, ShopId)));
+    if (ModPatch::ShopList.size() <= 0)
+        return orig_hook_UUIShop_Start(_this, ShopId, TradeShopId, Mode);
 
-    if (ModPatch::ShopList.size() > 0)
+    printf("[SNXPlugin] UUIShop::Start: ShopId: %i, TradeShopId: %i, Mode: %s\n", ShopId, TradeShopId, magic_enum::enum_name(Mode).data());
+    Config::init();
+    if (Config::LoadAllShopTables)
     {
-        //SDK::UDataTable* ShopTable = static_cast<SDK::UDataTable*>(SDK::UObject::FindObject(std::format("DataTable shop{}.shop{}", ShopId, ShopId)));
+        //Yuito Tables
+        for (int i = 0; i <= 12; i++)
+        {
+            SDK::UDataTable* ShopTable = SDK::URSUtilityLibrary::LoadDataTable(FNameHelper::FStringFromString(std::format("/Game/Database/Shop/shop{:02}.shop{:02}", i, i)));
+            for (auto& entry : ModPatch::ShopList)
+            {
+                UDataTable_AddRow(ShopTable, FNameHelper::FNameFromString(entry.first.c_str(), SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+                printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), ShopTable->GetName().c_str());
+            }
+        }
+
+        //Kasane Tables
+        for (int i = 20; i <= 32; i++)
+        {
+            SDK::UDataTable* ShopTable = SDK::URSUtilityLibrary::LoadDataTable(FNameHelper::FStringFromString(std::format("/Game/Database/Shop/shop{:02}.shop{:02}", i, i)));
+            for (auto& entry : ModPatch::ShopList)
+            {
+                UDataTable_AddRow(ShopTable, FNameHelper::FNameFromString(entry.first.c_str(), SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+                printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), ShopTable->GetName().c_str());
+            }
+        }
+
+        //Other Tables
+        SDK::UDataTable* ShopTable = SDK::URSUtilityLibrary::LoadDataTable(FNameHelper::FStringFromString("/Game/Database/Shop/shop99.shop99"));
+        for (auto& entry : ModPatch::ShopList)
+        {
+            UDataTable_AddRow(ShopTable, FNameHelper::FNameFromString(entry.first.c_str(), SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), ShopTable->GetName().c_str());
+        }
+        ShopTable = SDK::URSUtilityLibrary::LoadDataTable(FNameHelper::FStringFromString("/Game/Database/Shop/shop_dlc01_30.shop_dlc01_30"));
+        for (auto& entry : ModPatch::ShopList)
+        {
+            UDataTable_AddRow(ShopTable, FNameHelper::FNameFromString(entry.first.c_str(), SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), ShopTable->GetName().c_str());
+        }
+        ShopTable = SDK::URSUtilityLibrary::LoadDataTable(FNameHelper::FStringFromString("/Game/Database/Shop/shop_dlc01_30.shop_dlc01_30"));
         for (auto& entry : ModPatch::ShopList)
         {
             UDataTable_AddRow(ShopTable, FNameHelper::FNameFromString(entry.first.c_str(), SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
             printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), ShopTable->GetName().c_str());
         }
     }
+    else
+    {
+        //Preload the DataTable so that the new item can be injected before the shop is populated 
+        SDK::UDataTable* ShopTable = SDK::URSUtilityLibrary::LoadDataTable(FNameHelper::FStringFromString(std::format("/Game/Database/Shop/shop{}.shop{}", ShopId, ShopId)));
 
+        for (auto& entry : ModPatch::ShopList)
+        {
+            UDataTable_AddRow(ShopTable, FNameHelper::FNameFromString(entry.first.c_str(), SDK::FNAME_Add), (SDK::FTableRowBase*)(&entry.second));
+            printf("[SNXPlugin] [DT Merger] Added entry %s to DataTable \"%s\"\n", entry.first.c_str(), ShopTable->GetName().c_str());
+        }
+    }
     return orig_hook_UUIShop_Start(_this, ShopId, TradeShopId, Mode);
 }
 

@@ -2,3 +2,4 @@
 Enable_Console = true			#Enables showing the console
 Enable_Game_Console = false		#Enables the ingame console, open with the F2 key
 Save_Clean_Notification = false	#Notifes the user when a mod's addon flag was removed from the required dlc list of the save game
+LoadAllShopTables = false		#Loads all the shop tables during shop load and merges new items into them all, use this if the plugin isn't merging the right shop table.
