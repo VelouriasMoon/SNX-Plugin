@@ -11,8 +11,8 @@ A code plugin for Scarlet Nexus to extend to modability with a main focus on liv
 [Installation](#installation)  
 [Features](#features)  
 [Credits](#credits)  
-[Plugin Config](#plugin-config)
-[Mod Patches](#mod-patches)
+[Plugin Config](#plugin-config)  
+[Mod Patches](#mod-patches)  
 
 ## Installation
 Download the lastest release of [SNX-Plugin](https://github.com/VelouriasMoon/SNX-Plugin/releases/latest).  
